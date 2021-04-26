@@ -21,9 +21,8 @@ func NewHook(client *Client, levels []logrus.Level) *Hook {
 
 // Fire triggers a splunk event
 func (h *Hook) Fire(entry *logrus.Entry) error {
-	preparedEntry, err := h.formatter.Format(entry)
-	//preparedEntry := formattedEntry
-	//	preparedEntry, err := entry.String()
+	line, err := h.formatter.Format(entry)
+	preparedEntry := string(line)
 
 	if err != nil {
 		return err
