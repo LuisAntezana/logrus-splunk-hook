@@ -6,8 +6,9 @@ import (
 
 // Hook is a logrus hook for splunk
 type Hook struct {
-	Client *Client
-	levels []logrus.Level
+	Client    *Client
+	levels    []logrus.Level
+	formatter *logrus.JSONFormatter
 }
 
 // NewHook creates new hook
@@ -15,12 +16,14 @@ type Hook struct {
 // level - log level
 func NewHook(client *Client, levels []logrus.Level) *Hook {
 
-	return &Hook{client, levels}
+	return &Hook{client, levels, &logrus.JSONFormatter{}}
 }
 
 // Fire triggers a splunk event
 func (h *Hook) Fire(entry *logrus.Entry) error {
-	preparedEntry, err := entry.String()
+	preparedEntry, err := h.formatter.Format(entry)
+	//preparedEntry := formattedEntry
+	//	preparedEntry, err := entry.String()
 
 	if err != nil {
 		return err

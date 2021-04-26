@@ -1,4 +1,4 @@
-module github.com/Franco-Poveda/logrus-splunk-hook
+module github.com/jakobkrein/logrus-splunk-hook
 
 go 1.14
 
