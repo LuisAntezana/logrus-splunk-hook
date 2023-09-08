@@ -95,33 +95,33 @@ func (c *Client) NewEventWithTime(t int64, event interface{}, source string, sou
 // All that must be provided for a log event are the desired map[string]string key/val pairs. These can be anything
 // that provide context or information for the situation you are trying to log (i.e. err messages, status codes, etc).
 // The function auto-generates the event timestamp and hostname for you.
-func (c *Client) Log(event interface{}) error {
+func (c *Client) Log(event interface{}, retries int) error {
 	// create Splunk log
 	log := c.NewEvent(event, c.Source, c.SourceType, c.Index)
-	return c.LogEvent(log)
+	return c.LogEvent(log, retries)
 }
 
 // Client.LogWithTime is used to construct a new log event with a scpecified timestamp and POST it to the Splunk server.
 //
 // This is similar to Client.Log, just with the t parameter.
-func (c *Client) LogWithTime(t int64, event interface{}) error {
+func (c *Client) LogWithTime(t int64, event interface{}, retries int) error {
 	// create Splunk log
 	log := c.NewEventWithTime(t, event, c.Source, c.SourceType, c.Index)
-	return c.LogEvent(log)
+	return c.LogEvent(log, retries)
 }
 
 // Client.LogEvent is used to POST a single event to the Splunk server.
-func (c *Client) LogEvent(e *Event) error {
+func (c *Client) LogEvent(e *Event, retries int) error {
 	// Convert requestBody struct to byte slice to prep for http.NewRequest
 	b, err := json.Marshal(e)
 	if err != nil {
 		return err
 	}
-	return c.doRequest(bytes.NewBuffer(b))
+	return c.doRequest(bytes.NewBuffer(b), retries)
 }
 
 // Client.LogEvents is used to POST multiple events with a single request to the Splunk server.
-func (c *Client) LogEvents(events []*Event) error {
+func (c *Client) LogEvents(events []*Event, retries int) error {
 	buf := new(bytes.Buffer)
 	for _, e := range events {
 		b, err := json.Marshal(e)
@@ -133,14 +133,17 @@ func (c *Client) LogEvents(events []*Event) error {
 		buf.WriteString("\r\n\r\n")
 	}
 	// Convert requestBody struct to byte slice to prep for http.NewRequest
-	return c.doRequest(buf)
+	return c.doRequest(buf, retries)
 }
 
 // Client.doRequest is used internally to POST the bytes of events to the Splunk server.
-func (c *Client) doRequest(b *bytes.Buffer) error {
+func (c *Client) doRequest(b *bytes.Buffer, retries int) error {
 	// make new request
 	url := c.URL
 	req, err := http.NewRequest("POST", url, b)
+	if err != nil {
+		return err
+	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Splunk "+c.Token)
 
@@ -148,6 +151,16 @@ func (c *Client) doRequest(b *bytes.Buffer) error {
 	res, err := c.HTTPClient.Do(req)
 	if err != nil {
 		return err
+	}
+
+	// retry if fails
+	if res.StatusCode != 200 {
+		for i := 0; i < retries; i++ {
+			res, _ = c.HTTPClient.Do(req)
+			if res.StatusCode == 200 {
+				break
+			}
+		}
 	}
 
 	// If statusCode is not good, return error string
@@ -162,5 +175,6 @@ func (c *Client) doRequest(b *bytes.Buffer) error {
 		err = errors.New(responseBody)
 
 	}
+
 	return err
 }
