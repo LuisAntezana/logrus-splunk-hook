@@ -12,7 +12,7 @@ import (
 
 // Event represents the log event object that is sent to Splunk when Client.Log is called.
 type Event struct {
-	Time       int64       `json:"time" binding:"required"`                 // epoch time in seconds
+	Time       int64       `json:"time" binding:"required"`                 // epoch time in milliseconds
 	Host       string      `json:"host,omitempty" binding:"required"`       // hostname
 	Source     string      `json:"source,omitempty" binding:"required"`     // app name
 	SourceType string      `json:"sourcetype,omitempty" binding:"required"` // Splunk bucket to group logs in
@@ -65,7 +65,7 @@ func NewClient(httpClient *http.Client, URL string, Token string, Source string,
 // This method takes the current timestamp for the event, meaning that the event is generated at runtime.
 func (c *Client) NewEvent(event interface{}, source string, sourcetype string, index string) *Event {
 	e := &Event{
-		Time:       time.Now().Unix(),
+		Time:       time.Now().UnixMilli(),
 		Host:       c.Hostname,
 		Source:     source,
 		SourceType: sourcetype,
