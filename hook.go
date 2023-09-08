@@ -23,11 +23,9 @@ func NewHook(client *Client, levels []logrus.Level) *Hook {
 func (h *Hook) Fire(entry *logrus.Entry) error {
 	line, err := h.formatter.Format(entry)
 	preparedEntry := string(line)
-
 	if err != nil {
 		return err
 	}
-
 	err = h.Client.Log(
 		preparedEntry,
 	)
@@ -37,5 +35,4 @@ func (h *Hook) Fire(entry *logrus.Entry) error {
 // Levels Required for logrus hook implementation
 func (h *Hook) Levels() []logrus.Level {
 	return h.levels
-
 }
