@@ -156,12 +156,17 @@ func (c *Client) doRequest(b *bytes.Buffer, retries int) error {
 	// retry if fails
 	if res.StatusCode != 200 {
 		for i := 0; i < retries; i++ {
-			res, _ = c.HTTPClient.Do(req)
+			res, err = c.HTTPClient.Do(req)
+			if err != nil {
+				return err
+			}
 			if res.StatusCode == 200 {
 				break
 			}
 		}
 	}
+
+	defer res.Body.Close()
 
 	// If statusCode is not good, return error string
 	switch res.StatusCode {
@@ -173,8 +178,6 @@ func (c *Client) doRequest(b *bytes.Buffer, retries int) error {
 		buf.ReadFrom(res.Body)
 		responseBody := buf.String()
 		err = errors.New(responseBody)
-
 	}
-
 	return err
 }
