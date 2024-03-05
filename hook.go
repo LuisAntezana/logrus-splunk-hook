@@ -35,7 +35,7 @@ func (h *Hook) Fire(entry *logrus.Entry) error {
 	if err != nil {
 		return err
 	}
-	if h.async {
+	if h.async && entry.Level > logrus.FatalLevel {
 		go func() {
 			err = h.Client.Log(preparedEntry, h.retries)
 			if err != nil {
